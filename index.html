@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#FFF9F3">
+  <title>OOXX！一起玩</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <main class="game">
+
+    <header class="header">
+      <h1>OOXX <span>!</span></h1>
+      <p>一起來玩井字遊戲 ♡</p>
+    </header>
+
+    <!-- 累積比分 -->
+    <section class="scores" aria-label="玩家比分">
+      <div class="score score-o">
+        <span>玩家 O</span>
+        <strong id="score-o">0</strong>
+      </div>
+
+      <div class="score score-x">
+        <span>玩家 X</span>
+        <strong id="score-x">0</strong>
+      </div>
+    </section>
+
+    <!-- 猜拳階段 -->
+    <section id="rps-screen" class="screen">
+
+      <div class="message-card">
+        <h2 id="rps-title">先來猜拳吧！</h2>
+        <p id="rps-description">
+          玩家 O，請選擇你的手勢
+        </p>
+      </div>
+
+      <div id="rps-choices" class="rps-choices">
+        <button class="gesture" data-choice="rock">
+          <span class="emoji">✊</span>
+          <span>石頭</span>
+        </button>
+
+        <button class="gesture" data-choice="scissors">
+          <span class="emoji">✌️</span>
+          <span>剪刀</span>
+        </button>
+
+        <button class="gesture" data-choice="paper">
+          <span class="emoji">✋</span>
+          <span>布</span>
+        </button>
+      </div>
+
+      <!-- 交接手機 -->
+      <div id="handoff" class="hidden">
+        <div class="message-card">
+          <p>玩家 O 已經選好囉！</p>
+          <p>請把手機交給玩家 X ♡</p>
+        </div>
+        <button id="ready-btn" class="primary-btn">
+          玩家 X 準備好了！
+        </button>
+      </div>
+
+      <!-- 猜拳結果 -->
+      <div id="rps-result" class="hidden">
+        <div class="result-hands">
+          <div class="result-player result-o">
+            <span>玩家 O</span>
+            <strong id="hand-o"></strong>
+          </div>
+          <div class="result-player result-x">
+            <span>玩家 X</span>
+            <strong id="hand-x"></strong>
+          </div>
+        </div>
+
+        <h2 id="rps-outcome"></h2>
+        <button id="rps-next" class="primary-btn">
+          開始下棋 →
+        </button>
+      </div>
+    </section>
+
+    <!-- OOXX 階段 -->
+    <section id="game-screen" class="screen hidden">
+
+      <div id="status" class="message-card" role="status" aria-live="polite">
+        輪到玩家 O 囉！
+      </div>
+
+      <div class="board" aria-label="OOXX 九宮格">
+        <button class="cell" data-index="0" aria-label="第1格，空白"></button>
+        <button class="cell" data-index="1" aria-label="第2格，空白"></button>
+        <button class="cell" data-index="2" aria-label="第3格，空白"></button>
+        <button class="cell" data-index="3" aria-label="第4格，空白"></button>
+        <button class="cell" data-index="4" aria-label="第5格，空白"></button>
+        <button class="cell" data-index="5" aria-label="第6格，空白"></button>
+        <button class="cell" data-index="6" aria-label="第7格，空白"></button>
+        <button class="cell" data-index="7" aria-label="第8格，空白"></button>
+        <button class="cell" data-index="8" aria-label="第9格，空白"></button>
+      </div>
+
+      <button id="restart-btn" class="primary-btn">
+        再玩一局 ↻
+      </button>
+    </section>
+
+    <button id="reset-btn" class="reset-btn">
+      重置比分
+    </button>
+
+    <footer>
+      <p>OOXX ♡ Have fun!</p>
+    </footer>
+
+  </main>
+
+</body>
+</html>
