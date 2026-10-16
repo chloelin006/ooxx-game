@@ -3,117 +3,191 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#FFF9F3">
+  <meta name="description" content="OOXX！和電腦猜拳、挑戰井字遊戲。">
   <title>OOXX！挑戰電腦</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./script.js" defer></script>
 </head>
+
 <body>
-
   <main class="app">
-
-    <header class="header">
-      <h1>OOXX <span>!</span></h1>
+    <header class="brand">
+      <h1>OOXX<span>!</span></h1>
       <p>今天來挑戰電腦吧 ♡</p>
     </header>
 
-    <!-- 首頁：選擇難度 -->
+    <!-- 01：選擇 AI 難度 -->
     <section id="home-screen" class="screen">
-      <div class="card">
-        <h2>🤖 選擇 AI 難度</h2>
-        <p>準備好挑戰電腦了嗎？</p>
+      <div class="panel">
+        <div class="section-heading">
+          <span class="eyebrow">PLAY WITH AI</span>
+          <h2>選擇 AI 難度</h2>
+          <span class="heading-line"></span>
+          <p>不同難度，不同挑戰<br>找到最適合你的對手！</p>
+        </div>
 
-        <div class="difficulty-options">
-          <button class="difficulty-btn"
-                  data-level="easy">
-            🌱 簡單
-            <small>電腦隨機下棋</small>
+        <div class="difficulty-list" role="group"
+             aria-label="選擇 AI 難度">
+
+          <button class="difficulty-card easy"
+                  data-level="easy"
+                  aria-pressed="false">
+            <span class="difficulty-icon">✦</span>
+            <span class="difficulty-copy">
+              <strong>簡單</strong>
+              <small>電腦隨機下棋</small>
+              <small>適合新手輕鬆體驗</small>
+            </span>
+            <span class="select-indicator"></span>
           </button>
 
-          <button class="difficulty-btn selected"
-                  data-level="normal">
-            ⭐ 普通
-            <small>電腦會進攻與防守</small>
+          <button class="difficulty-card normal selected"
+                  data-level="normal"
+                  aria-pressed="true">
+            <span class="difficulty-icon">☆</span>
+            <span class="difficulty-copy">
+              <strong>普通</strong>
+              <small>電腦會進攻與防守</small>
+              <small>最剛好的挑戰</small>
+            </span>
+            <span class="select-indicator"></span>
           </button>
 
-          <button class="difficulty-btn"
-                  data-level="hard">
-            🔥 困難
-            <small>挑戰最強電腦</small>
+          <button class="difficulty-card hard"
+                  data-level="hard"
+                  aria-pressed="false">
+            <span class="difficulty-icon">◇</span>
+            <span class="difficulty-copy">
+              <strong>困難</strong>
+              <small>挑戰最佳策略 AI</small>
+              <small>你能逼出平手嗎？</small>
+            </span>
+            <span class="select-indicator"></span>
           </button>
         </div>
 
         <button id="start-btn" class="primary-btn">
-          開始挑戰 →
+          開始挑戰 <span aria-hidden="true">→</span>
         </button>
       </div>
     </section>
 
-    <!-- 猜拳畫面 -->
+    <!-- 02：猜拳選擇 -->
     <section id="rps-screen" class="screen hidden">
-      <div class="card">
+      <div class="section-heading rps-heading">
+        <span class="eyebrow">ROCK · PAPER · SCISSORS</span>
         <h2>先來猜拳吧！</h2>
-        <p id="rps-message">
-          選擇剪刀、石頭或布
-        </p>
+        <span class="heading-line"></span>
+        <p id="rps-message">猜拳決定誰先下棋<br>贏家可以優先出手！</p>
+      </div>
 
-        <div id="rps-choices" class="rps-choices">
-          <button data-hand="rock">
-            <span>✊</span>
-            石頭
-          </button>
-          <button data-hand="scissors">
-            <span>✌️</span>
-            剪刀
-          </button>
-          <button data-hand="paper">
-            <span>✋</span>
-            布
-          </button>
+      <div id="rps-choices" class="rps-list">
+        <button class="rps-card rock" data-hand="rock">
+          <span class="rps-symbol">✊</span>
+          <span class="rps-copy">
+            <strong>石頭</strong>
+            <small>Rock</small>
+          </span>
+          <span class="rps-arrow">›</span>
+        </button>
+
+        <button class="rps-card scissors" data-hand="scissors">
+          <span class="rps-symbol">✌️</span>
+          <span class="rps-copy">
+            <strong>剪刀</strong>
+            <small>Scissors</small>
+          </span>
+          <span class="rps-arrow">›</span>
+        </button>
+
+        <button class="rps-card paper" data-hand="paper">
+          <span class="rps-symbol">✋</span>
+          <span class="rps-copy">
+            <strong>布</strong>
+            <small>Paper</small>
+          </span>
+          <span class="rps-arrow">›</span>
+        </button>
+      </div>
+
+      <div class="rule-card">
+        <strong>出拳規則</strong>
+        <p>石頭勝剪刀 · 剪刀勝布 · 布勝石頭</p>
+      </div>
+
+      <button id="rps-back-btn" class="text-btn">
+        ← 返回難度選擇
+      </button>
+    </section>
+
+    <!-- 03：猜拳結果 -->
+    <section id="result-screen" class="screen hidden">
+      <div class="section-heading">
+        <span class="eyebrow">ROUND RESULT</span>
+        <h2>猜拳結果</h2>
+        <span class="heading-line"></span>
+      </div>
+
+      <div class="versus">
+        <div class="versus-player">
+          <span class="versus-label">你 O</span>
+          <span id="player-hand" class="versus-hand"></span>
+          <strong id="player-hand-name"></strong>
         </div>
 
-        <div id="rps-result" class="hidden">
-          <div class="rps-hands">
-            <div class="hand-player">
-              <span>你 O</span>
-              <strong id="player-hand"></strong>
-            </div>
-            <div class="hand-ai">
-              <span>電腦 X</span>
-              <strong id="ai-hand"></strong>
-            </div>
-          </div>
+        <span class="versus-vs">VS</span>
 
-          <h3 id="rps-outcome"></h3>
-
-          <button id="rps-next-btn" class="primary-btn">
-            開始下棋 →
-          </button>
+        <div class="versus-ai">
+          <span class="versus-label">電腦 X</span>
+          <span id="ai-hand" class="versus-hand"></span>
+          <strong id="ai-hand-name"></strong>
         </div>
+      </div>
+
+      <div id="outcome-card" class="outcome-card"
+           role="status" aria-live="polite">
+        <span id="outcome-decoration" class="outcome-decoration">
+          ✦
+        </span>
+        <h2 id="rps-outcome"></h2>
+        <p id="outcome-description"></p>
+        <button id="rps-next-btn" class="primary-btn">
+          開始下棋 →
+        </button>
       </div>
     </section>
 
-    <!-- OOXX 遊戲畫面 -->
+    <!-- 04：OOXX 棋盤 -->
     <section id="game-screen" class="screen hidden">
+      <div class="game-top">
+        <span class="eyebrow">TIC TAC TOE</span>
+        <h2>OOXX 對戰</h2>
+        <p id="level-display">普通難度</p>
+      </div>
 
-      <div class="scores">
-        <div class="score player-score">
+      <div class="scoreboard">
+        <div class="score-card player">
           <span>你 O</span>
           <strong id="score-o">0</strong>
+          <small>PLAYER</small>
         </div>
-        <div class="score ai-score">
+
+        <div class="score-card computer">
           <span>電腦 X</span>
           <strong id="score-x">0</strong>
+          <small>COMPUTER</small>
         </div>
       </div>
 
-      <div id="game-status" class="status"
+      <div id="game-status" class="game-status"
            role="status" aria-live="polite">
         準備開始
       </div>
 
-      <div class="board" aria-label="OOXX 棋盤">
+      <div id="board" class="board"
+           role="group" aria-label="OOXX 九宮格">
         <button class="cell" data-index="0" aria-label="第1格"></button>
         <button class="cell" data-index="1" aria-label="第2格"></button>
         <button class="cell" data-index="2" aria-label="第3格"></button>
@@ -125,23 +199,20 @@
         <button class="cell" data-index="8" aria-label="第9格"></button>
       </div>
 
-      <button id="restart-btn" class="primary-btn">
-        再玩一局 ↻
-      </button>
-
-      <button id="change-level-btn" class="secondary-btn">
-        更換難度
-      </button>
-
-      <button id="reset-btn" class="text-btn">
-        重置比分
-      </button>
-
+      <div class="game-actions">
+        <button id="restart-btn" class="primary-btn">
+          再玩一局 ↻
+        </button>
+        <button id="change-level-btn" class="secondary-btn">
+          更換難度
+        </button>
+        <button id="reset-btn" class="text-btn">
+          重置比分
+        </button>
+      </div>
     </section>
 
     <footer>OOXX ♡ Have fun!</footer>
-
   </main>
-
 </body>
 </html>
