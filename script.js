@@ -1,19 +1,24 @@
 
-// ======================================
-// OOXX V4.0｜單人 AI 對戰完整版
-// ======================================
+// ============================================
+// OOXX V4.1｜AI 對戰完整遊戲
+// ============================================
 
-// HTML 元素
+// 取得 HTML 元素
 const $ = id => document.getElementById(id);
 
-const homeScreen = $("home-screen");
-const rpsScreen = $("rps-screen");
-const gameScreen = $("game-screen");
+const screens = [
+  "home-screen",
+  "rps-screen",
+  "result-screen",
+  "game-screen"
+];
 
 const cells = [...document.querySelectorAll(".cell")];
-const difficultyButtons = [...document.querySelectorAll(".difficulty-btn")];
+const difficultyButtons = [
+  ...document.querySelectorAll(".difficulty-card")
+];
 
-// 遊戲設定
+// 遊戲狀態
 let difficulty = "normal";
 let phase = "home";
 let board = Array(9).fill("");
@@ -21,9 +26,17 @@ let currentPlayer = "O";
 let rpsWinner = null;
 let aiTimer = null;
 
-const STORAGE_KEY = "ooxx-v4-scores";
+// 儲存比分的名稱
+const STORAGE_KEY = "ooxx-v41-scores";
 
-// 勝利組合
+// 手勢資訊
+const hands = {
+  rock: { symbol: "✊", name: "石頭" },
+  scissors: { symbol: "✌️", name: "剪刀" },
+  paper: { symbol: "✋", name: "布" }
+};
+
+// 八種獲勝連線
 const winningLines = [
   [0, 1, 2],
   [3, 4, 5],
@@ -35,54 +48,16 @@ const winningLines = [
   [2, 4, 6]
 ];
 
-// 猜拳手勢
-const hands = {
-  rock: "✊",
-  scissors: "✌️",
-  paper: "✋"
-};
+// ============================================
+// 畫面切換
+// ============================================
 
-// ======================================
-// 比分儲存
-// ======================================
-
-function loadScores() {
-  try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-
-    return {
-      O: Number.isSafeInteger(data?.O) && data.O >= 0
-        ? data.O : 0,
-      X: Number.isSafeInteger(data?.X) && data.X >= 0
-        ? data.X : 0
-    };
-  } catch {
-    return { O: 0, X: 0 };
-  }
-}
-
-let scores = loadScores();
-
-function saveScores() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
-  } catch {
-    // 無法儲存時仍可繼續遊戲
-  }
-}
-
-function renderScores() {
-  $("score-o").textContent = scores.O;
-  $("score-x").textContent = scores.X;
-}
-
-// ======================================
-// 共用功能
-// ======================================
-
-function showScreen(screen) {
-  [homeScreen, rpsScreen, gameScreen].forEach(element => {
-    element.classList.toggle("hidden", element !== screen);
+function showScreen(id) {
+  screens.forEach(screenId => {
+    $(screenId).classList.toggle(
+      "hidden",
+      screenId !== id
+    );
   });
 }
 
@@ -93,46 +68,92 @@ function clearAITimer() {
   }
 }
 
-// ======================================
-// 難度選擇
-// ======================================
+function showHome() {
+  clearAITimer();
+  phase = "home";
+  showScreen("home-screen");
+}
+
+// ============================================
+// 比分紀錄
+// ============================================
+
+function loadScores() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY)
+    );
+
+    return {
+      O: Number.isSafeInteger(saved?.O) && saved.O >= 0
+        ? saved.O : 0,
+      X: Number.isSafeInteger(saved?.X) && saved.X >= 0
+        ? saved.X : 0
+    };
+  } catch {
+    return { O: 0, X: 0 };
+  }
+}
+
+let scores = loadScores();
+
+function saveScores() {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(scores)
+    );
+  } catch {
+    // 無法儲存時，仍可正常遊戲
+  }
+}
+
+function renderScores() {
+  $("score-o").textContent = scores.O;
+  $("score-x").textContent = scores.X;
+}
+
+// ============================================
+// 選擇 AI 難度
+// ============================================
 
 difficultyButtons.forEach(button => {
   button.addEventListener("click", () => {
     difficulty = button.dataset.level;
 
-    difficultyButtons.forEach(btn => {
-      btn.classList.toggle("selected", btn === button);
+    difficultyButtons.forEach(item => {
+      const selected = item === button;
+
+      item.classList.toggle("selected", selected);
+      item.setAttribute("aria-pressed", String(selected));
     });
   });
 });
 
-$("start-btn").addEventListener("click", () => {
-  startRps();
-});
+$("start-btn").addEventListener("click", startRps);
 
-$("change-level-btn").addEventListener("click", () => {
-  clearAITimer();
-  phase = "home";
-  showScreen(homeScreen);
-});
+$("rps-back-btn").addEventListener("click", showHome);
 
-// ======================================
+$("change-level-btn").addEventListener("click", showHome);
+
+// ============================================
 // 猜拳系統
-// ======================================
+// ============================================
 
 function randomHand() {
-  const options = Object.keys(hands);
+  const options = ["rock", "scissors", "paper"];
   return options[Math.floor(Math.random() * options.length)];
 }
 
-function determineRpsWinner(player, ai) {
-  if (player === ai) return null;
+function determineRpsWinner(playerHand, aiHand) {
+  if (playerHand === aiHand) {
+    return null;
+  }
 
   const playerWins =
-    (player === "rock" && ai === "scissors") ||
-    (player === "scissors" && ai === "paper") ||
-    (player === "paper" && ai === "rock");
+    (playerHand === "rock" && aiHand === "scissors") ||
+    (playerHand === "scissors" && aiHand === "paper") ||
+    (playerHand === "paper" && aiHand === "rock");
 
   return playerWins ? "O" : "X";
 }
@@ -143,16 +164,13 @@ function startRps() {
   phase = "rps";
   rpsWinner = null;
 
-  showScreen(rpsScreen);
+  $("rps-message").innerHTML =
+    "猜拳決定誰先下棋<br>贏家可以優先出手！";
 
-  $("rps-message").textContent =
-    "選擇剪刀、石頭或布，贏家先下棋！";
-
-  $("rps-choices").classList.remove("hidden");
-  $("rps-result").classList.add("hidden");
+  showScreen("rps-screen");
 }
 
-// 玩家選擇手勢
+// 玩家選擇石頭、剪刀或布
 document.querySelectorAll("[data-hand]").forEach(button => {
   button.addEventListener("click", () => {
     if (phase !== "rps") return;
@@ -164,23 +182,35 @@ document.querySelectorAll("[data-hand]").forEach(button => {
 
     rpsWinner = determineRpsWinner(playerHand, aiHand);
 
-    $("player-hand").textContent = hands[playerHand];
-    $("ai-hand").textContent = hands[aiHand];
+    $("player-hand").textContent = hands[playerHand].symbol;
+    $("player-hand-name").textContent = hands[playerHand].name;
 
-    $("rps-choices").classList.add("hidden");
-    $("rps-result").classList.remove("hidden");
+    $("ai-hand").textContent = hands[aiHand].symbol;
+    $("ai-hand-name").textContent = hands[aiHand].name;
 
-    if (rpsWinner === null) {
-      $("rps-outcome").textContent = "平手！再猜一次 ♡";
-      $("rps-next-btn").textContent = "重新猜拳 ↻";
-    } else {
-      $("rps-outcome").textContent =
-        rpsWinner === "O"
-          ? "你贏得先手啦！🎉"
-          : "電腦贏得先手！🤖";
-
+    if (rpsWinner === "O") {
+      $("outcome-decoration").textContent = "✦";
+      $("rps-outcome").textContent = "你贏了！";
+      $("outcome-description").textContent =
+        "你獲得先手，可以先下棋囉！";
       $("rps-next-btn").textContent = "開始下棋 →";
+
+    } else if (rpsWinner === "X") {
+      $("outcome-decoration").textContent = "◇";
+      $("rps-outcome").textContent = "電腦贏了！";
+      $("outcome-description").textContent =
+        "這局由電腦先下棋，準備迎接挑戰！";
+      $("rps-next-btn").textContent = "開始下棋 →";
+
+    } else {
+      $("outcome-decoration").textContent = "♡";
+      $("rps-outcome").textContent = "平手！";
+      $("outcome-description").textContent =
+        "你們出了相同的手勢，再猜一次吧！";
+      $("rps-next-btn").textContent = "重新猜拳 ↻";
     }
+
+    showScreen("result-screen");
   });
 });
 
@@ -194,9 +224,9 @@ $("rps-next-btn").addEventListener("click", () => {
   }
 });
 
-// ======================================
+// ============================================
 // OOXX 勝負判斷
-// ======================================
+// ============================================
 
 function getWinningLine(state, player) {
   return winningLines.find(line =>
@@ -206,21 +236,27 @@ function getWinningLine(state, player) {
 
 function getResult(state) {
   const oLine = getWinningLine(state, "O");
-  if (oLine) return { winner: "O", line: oLine };
+
+  if (oLine) {
+    return { winner: "O", line: oLine };
+  }
 
   const xLine = getWinningLine(state, "X");
-  if (xLine) return { winner: "X", line: xLine };
 
-  if (state.every(value => value !== "")) {
+  if (xLine) {
+    return { winner: "X", line: xLine };
+  }
+
+  if (state.every(cell => cell !== "")) {
     return { winner: "draw", line: null };
   }
 
   return null;
 }
 
-// ======================================
+// ============================================
 // 開始 OOXX
-// ======================================
+// ============================================
 
 function startGame() {
   clearAITimer();
@@ -229,21 +265,32 @@ function startGame() {
   currentPlayer = rpsWinner;
   phase = "playing";
 
-  showScreen(gameScreen);
+  const levelNames = {
+    easy: "簡單難度",
+    normal: "普通難度",
+    hard: "困難難度"
+  };
+
+  $("level-display").textContent = levelNames[difficulty];
+
+  // 遊戲開始時隱藏重玩按鈕
+  $("restart-btn").classList.add("hidden");
+
   renderScores();
   renderBoard();
+  showScreen("game-screen");
 
   if (currentPlayer === "O") {
     $("game-status").textContent = "輪到你下棋囉！";
   } else {
-    $("game-status").textContent = "電腦先下棋 🤖";
+    $("game-status").textContent = "電腦先下棋...";
     scheduleAIMove();
   }
 }
 
-// ======================================
+// ============================================
 // 棋盤顯示
-// ======================================
+// ============================================
 
 function renderBoard() {
   const result = getResult(board);
@@ -254,8 +301,10 @@ function renderBoard() {
     cell.textContent = value;
     cell.className = "cell";
 
-    if (value) {
-      cell.classList.add(value.toLowerCase());
+    if (value === "O") {
+      cell.classList.add("o");
+    } else if (value === "X") {
+      cell.classList.add("x");
     }
 
     if (result?.line?.includes(index)) {
@@ -274,9 +323,9 @@ function renderBoard() {
   });
 }
 
-// ======================================
+// ============================================
 // 玩家下棋
-// ======================================
+// ============================================
 
 cells.forEach(cell => {
   cell.addEventListener("click", () => {
@@ -293,6 +342,9 @@ cells.forEach(cell => {
 function makeMove(index, player) {
   if (phase !== "playing") return;
   if (currentPlayer !== player) return;
+  if (!Number.isInteger(index) || index < 0 || index > 8) {
+    return;
+  }
   if (board[index] !== "") return;
 
   board[index] = player;
@@ -308,16 +360,16 @@ function makeMove(index, player) {
   renderBoard();
 
   if (currentPlayer === "X") {
-    $("game-status").textContent = "電腦思考中... 🤖";
+    $("game-status").textContent = "電腦思考中...";
     scheduleAIMove();
   } else {
     $("game-status").textContent = "輪到你下棋囉！";
   }
 }
 
-// ======================================
-// AI 自動下棋
-// ======================================
+// ============================================
+// AI 下棋控制
+// ============================================
 
 function scheduleAIMove() {
   clearAITimer();
@@ -325,16 +377,15 @@ function scheduleAIMove() {
   aiTimer = setTimeout(() => {
     aiTimer = null;
 
-    if (phase !== "playing" || currentPlayer !== "X") {
-      return;
-    }
+    if (phase !== "playing") return;
+    if (currentPlayer !== "X") return;
 
     const move = getAIMove(board, difficulty);
 
     if (move !== null) {
       makeMove(move, "X");
     }
-  }, 500);
+  }, 550);
 }
 
 function getEmptyCells(state) {
@@ -346,14 +397,14 @@ function getEmptyCells(state) {
 function randomMove(state) {
   const options = getEmptyCells(state);
 
-  if (!options.length) return null;
+  if (options.length === 0) return null;
 
   return options[Math.floor(Math.random() * options.length)];
 }
 
-// ======================================
-// 普通 AI：進攻與防守
-// ======================================
+// ============================================
+// 普通 AI：優先進攻與防守
+// ============================================
 
 function findImmediateWin(state, player) {
   for (const index of getEmptyCells(state)) {
@@ -369,18 +420,21 @@ function findImmediateWin(state, player) {
 }
 
 function normalMove(state) {
+  // 1. 電腦能獲勝就先獲勝
   const win = findImmediateWin(state, "X");
   if (win !== null) return win;
 
+  // 2. 阻擋玩家即將連線
   const block = findImmediateWin(state, "O");
   if (block !== null) return block;
 
+  // 3. 其餘情況隨機選擇
   return randomMove(state);
 }
 
-// ======================================
+// ============================================
 // 困難 AI：Minimax 演算法
-// ======================================
+// ============================================
 
 function minimax(state, player, depth) {
   const result = getResult(state);
@@ -425,10 +479,10 @@ function minimax(state, player, depth) {
 function hardMove(state) {
   const options = getEmptyCells(state);
 
-  if (!options.length) return null;
+  if (options.length === 0) return null;
 
   let bestScore = -Infinity;
-  let bestMove = options[0];
+  let bestMoves = [];
 
   for (const index of options) {
     const copy = [...state];
@@ -438,22 +492,33 @@ function hardMove(state) {
 
     if (score > bestScore) {
       bestScore = score;
-      bestMove = index;
+      bestMoves = [index];
+    } else if (score === bestScore) {
+      bestMoves.push(index);
     }
   }
 
-  return bestMove;
+  // 同樣最佳的走法中隨機選一個
+  return bestMoves[
+    Math.floor(Math.random() * bestMoves.length)
+  ];
 }
 
 function getAIMove(state, level) {
-  if (level === "easy") return randomMove(state);
-  if (level === "normal") return normalMove(state);
+  if (level === "easy") {
+    return randomMove(state);
+  }
+
+  if (level === "normal") {
+    return normalMove(state);
+  }
+
   return hardMove(state);
 }
 
-// ======================================
+// ============================================
 // 遊戲結束
-// ======================================
+// ============================================
 
 function finishGame(result) {
   clearAITimer();
@@ -461,45 +526,59 @@ function finishGame(result) {
 
   if (result.winner === "O") {
     scores.O++;
-    $("game-status").textContent = "你贏啦！太棒了 🎉";
+    $("game-status").textContent = "你贏了！恭喜 ♡";
+
   } else if (result.winner === "X") {
     scores.X++;
-    $("game-status").textContent = "電腦贏了！再挑戰一次 🤖";
+    $("game-status").textContent =
+      "這次電腦贏了，再挑戰一次吧！";
+
   } else {
-    $("game-status").textContent = "平手！勢均力敵 ♡";
+    $("game-status").textContent =
+      "平手！這是一場精彩的對決。";
   }
 
   saveScores();
   renderScores();
   renderBoard();
+
+  $("restart-btn").classList.remove("hidden");
 }
 
-// ======================================
+// ============================================
 // 再玩一局
-// ======================================
+// ============================================
 
 $("restart-btn").addEventListener("click", () => {
+  if (phase !== "finished") return;
+
+  // 保留比分，重新猜拳
   startRps();
 });
 
-// ======================================
+// ============================================
 // 重置比分
-// ======================================
+// ============================================
 
 $("reset-btn").addEventListener("click", () => {
-  const confirmed = confirm("確定要清除所有比分嗎？");
+  const confirmed = confirm(
+    "確定要清除玩家與電腦的累積比分嗎？"
+  );
 
   if (!confirmed) return;
 
   scores = { O: 0, X: 0 };
+
   saveScores();
   renderScores();
+
+  // 清除比分後重新猜拳
   startRps();
 });
 
-// ======================================
+// ============================================
 // 初始化
-// ======================================
+// ============================================
 
 renderScores();
-showScreen(homeScreen);
+showHome();
