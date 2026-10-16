@@ -1,72 +1,60 @@
 
-// ================================
-// OOXX V2.0 遊戲邏輯
-// ================================
+// ======================================
+// OOXX V4.0｜單人 AI 對戰完整版
+// ======================================
 
-// 取得 HTML 元素
-const rpsScreen = document.getElementById("rps-screen");
-const gameScreen = document.getElementById("game-screen");
+// HTML 元素
+const $ = id => document.getElementById(id);
 
-const rpsTitle = document.getElementById("rps-title");
-const rpsDescription = document.getElementById("rps-description");
-const rpsChoices = document.getElementById("rps-choices");
-const handoff = document.getElementById("handoff");
-const rpsResult = document.getElementById("rps-result");
+const homeScreen = $("home-screen");
+const rpsScreen = $("rps-screen");
+const gameScreen = $("game-screen");
 
-const handO = document.getElementById("hand-o");
-const handX = document.getElementById("hand-x");
-const rpsOutcome = document.getElementById("rps-outcome");
-const rpsNext = document.getElementById("rps-next");
-
-const readyBtn = document.getElementById("ready-btn");
-const restartBtn = document.getElementById("restart-btn");
-const resetBtn = document.getElementById("reset-btn");
-
-const statusText = document.getElementById("status");
 const cells = [...document.querySelectorAll(".cell")];
+const difficultyButtons = [...document.querySelectorAll(".difficulty-btn")];
 
-const scoreO = document.getElementById("score-o");
-const scoreX = document.getElementById("score-x");
+// 遊戲設定
+let difficulty = "normal";
+let phase = "home";
+let board = Array(9).fill("");
+let currentPlayer = "O";
+let rpsWinner = null;
+let aiTimer = null;
 
-const gestureButtons = document.querySelectorAll(".gesture");
+const STORAGE_KEY = "ooxx-v4-scores";
 
-// ================================
-// 遊戲狀態
-// ================================
+// 勝利組合
+const winningLines = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6]
+];
 
-const STATES = {
-  RPS_O: "rps_o",
-  HANDOFF: "handoff",
-  RPS_X: "rps_x",
-  RPS_RESULT: "rps_result",
-  PLAYING: "playing",
-  GAME_OVER: "game_over"
+// 猜拳手勢
+const hands = {
+  rock: "✊",
+  scissors: "✌️",
+  paper: "✋"
 };
 
-let gameState = STATES.RPS_O;
-
-let choiceO = null;
-let choiceX = null;
-let rpsWinner = null;
-
-let board = Array(9).fill("");
-let currentPlayer = null;
-
-// ================================
+// ======================================
 // 比分儲存
-// ================================
-
-const STORAGE_KEY = "ooxx-scores-v1";
+// ======================================
 
 function loadScores() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
 
     return {
-      O: Number.isSafeInteger(saved?.O) && saved.O >= 0
-        ? saved.O : 0,
-      X: Number.isSafeInteger(saved?.X) && saved.X >= 0
-        ? saved.X : 0
+      O: Number.isSafeInteger(data?.O) && data.O >= 0
+        ? data.O : 0,
+      X: Number.isSafeInteger(data?.X) && data.X >= 0
+        ? data.X : 0
     };
   } catch {
     return { O: 0, X: 0 };
@@ -79,309 +67,439 @@ function saveScores() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
   } catch {
-    // 無法儲存時仍可正常遊戲
+    // 無法儲存時仍可繼續遊戲
   }
 }
 
 function renderScores() {
-  scoreO.textContent = scores.O;
-  scoreX.textContent = scores.X;
+  $("score-o").textContent = scores.O;
+  $("score-x").textContent = scores.X;
 }
 
-// ================================
-// 猜拳規則
-// ================================
+// ======================================
+// 共用功能
+// ======================================
 
-const gestures = {
-  rock: "✊",
-  scissors: "✌️",
-  paper: "✋"
-};
-
-function determineRpsWinner(o, x) {
-  if (o === x) return null;
-
-  const oWins =
-    (o === "rock" && x === "scissors") ||
-    (o === "scissors" && x === "paper") ||
-    (o === "paper" && x === "rock");
-
-  return oWins ? "O" : "X";
+function showScreen(screen) {
+  [homeScreen, rpsScreen, gameScreen].forEach(element => {
+    element.classList.toggle("hidden", element !== screen);
+  });
 }
 
-// ================================
-// 顯示猜拳畫面
-// ================================
-
-function showRpsScreen() {
-  rpsScreen.classList.remove("hidden");
-  gameScreen.classList.add("hidden");
-
-  rpsChoices.classList.remove("hidden");
-  handoff.classList.add("hidden");
-  rpsResult.classList.add("hidden");
-
-  rpsTitle.textContent = "先來猜拳吧！";
-  rpsDescription.textContent = "玩家 O，請選擇你的手勢";
-}
-
-// ================================
-// 猜拳選擇
-// ================================
-
-function selectGesture(choice) {
-
-  if (gameState === STATES.RPS_O) {
-
-    choiceO = choice;
-    gameState = STATES.HANDOFF;
-
-    rpsChoices.classList.add("hidden");
-    handoff.classList.remove("hidden");
-
-    rpsTitle.textContent = "換玩家 X 囉！";
-    rpsDescription.textContent = "請把手機交給玩家 X";
-
-    return;
-  }
-
-  if (gameState === STATES.RPS_X) {
-
-    choiceX = choice;
-    gameState = STATES.RPS_RESULT;
-
-    showRpsResult();
+function clearAITimer() {
+  if (aiTimer !== null) {
+    clearTimeout(aiTimer);
+    aiTimer = null;
   }
 }
 
-// 玩家 X 準備完成
-readyBtn.addEventListener("click", () => {
-  if (gameState !== STATES.HANDOFF) return;
+// ======================================
+// 難度選擇
+// ======================================
 
-  gameState = STATES.RPS_X;
-
-  handoff.classList.add("hidden");
-  rpsChoices.classList.remove("hidden");
-
-  rpsTitle.textContent = "玩家 X 的回合";
-  rpsDescription.textContent = "請選擇你的手勢 ♡";
-});
-
-// 猜拳按鈕事件
-gestureButtons.forEach(button => {
+difficultyButtons.forEach(button => {
   button.addEventListener("click", () => {
-    selectGesture(button.dataset.choice);
+    difficulty = button.dataset.level;
+
+    difficultyButtons.forEach(btn => {
+      btn.classList.toggle("selected", btn === button);
+    });
   });
 });
 
-// ================================
-// 公布猜拳結果
-// ================================
+$("start-btn").addEventListener("click", () => {
+  startRps();
+});
 
-function showRpsResult() {
+$("change-level-btn").addEventListener("click", () => {
+  clearAITimer();
+  phase = "home";
+  showScreen(homeScreen);
+});
 
-  rpsWinner = determineRpsWinner(choiceO, choiceX);
+// ======================================
+// 猜拳系統
+// ======================================
 
-  rpsChoices.classList.add("hidden");
-  handoff.classList.add("hidden");
-  rpsResult.classList.remove("hidden");
-
-  handO.textContent = gestures[choiceO];
-  handX.textContent = gestures[choiceX];
-
-  rpsTitle.textContent = "猜拳結果出爐！";
-  rpsDescription.textContent = "看看誰贏了吧 ♡";
-
-  if (rpsWinner === null) {
-    rpsOutcome.textContent = "平手！再猜一次 ♡";
-    rpsNext.textContent = "重新猜拳 ↻";
-  } else {
-    rpsOutcome.textContent = `玩家 ${rpsWinner} 贏啦！🎉`;
-    rpsNext.textContent = "開始下棋 →";
-  }
+function randomHand() {
+  const options = Object.keys(hands);
+  return options[Math.floor(Math.random() * options.length)];
 }
 
-// 猜拳結果下一步
-rpsNext.addEventListener("click", () => {
+function determineRpsWinner(player, ai) {
+  if (player === ai) return null;
 
-  if (gameState !== STATES.RPS_RESULT) return;
+  const playerWins =
+    (player === "rock" && ai === "scissors") ||
+    (player === "scissors" && ai === "paper") ||
+    (player === "paper" && ai === "rock");
+
+  return playerWins ? "O" : "X";
+}
+
+function startRps() {
+  clearAITimer();
+
+  phase = "rps";
+  rpsWinner = null;
+
+  showScreen(rpsScreen);
+
+  $("rps-message").textContent =
+    "選擇剪刀、石頭或布，贏家先下棋！";
+
+  $("rps-choices").classList.remove("hidden");
+  $("rps-result").classList.add("hidden");
+}
+
+// 玩家選擇手勢
+document.querySelectorAll("[data-hand]").forEach(button => {
+  button.addEventListener("click", () => {
+    if (phase !== "rps") return;
+
+    phase = "rps-result";
+
+    const playerHand = button.dataset.hand;
+    const aiHand = randomHand();
+
+    rpsWinner = determineRpsWinner(playerHand, aiHand);
+
+    $("player-hand").textContent = hands[playerHand];
+    $("ai-hand").textContent = hands[aiHand];
+
+    $("rps-choices").classList.add("hidden");
+    $("rps-result").classList.remove("hidden");
+
+    if (rpsWinner === null) {
+      $("rps-outcome").textContent = "平手！再猜一次 ♡";
+      $("rps-next-btn").textContent = "重新猜拳 ↻";
+    } else {
+      $("rps-outcome").textContent =
+        rpsWinner === "O"
+          ? "你贏得先手啦！🎉"
+          : "電腦贏得先手！🤖";
+
+      $("rps-next-btn").textContent = "開始下棋 →";
+    }
+  });
+});
+
+$("rps-next-btn").addEventListener("click", () => {
+  if (phase !== "rps-result") return;
 
   if (rpsWinner === null) {
-    startNewRound();
+    startRps();
   } else {
-    startOoxx();
+    startGame();
   }
 });
 
-// ================================
-// OOXX 勝利條件
-// ================================
+// ======================================
+// OOXX 勝負判斷
+// ======================================
 
-const winningLines = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6]
-];
-
-function findWinningLine(player) {
+function getWinningLine(state, player) {
   return winningLines.find(line =>
-    line.every(index => board[index] === player)
-  );
+    line.every(index => state[index] === player)
+  ) || null;
 }
 
-// ================================
+function getResult(state) {
+  const oLine = getWinningLine(state, "O");
+  if (oLine) return { winner: "O", line: oLine };
+
+  const xLine = getWinningLine(state, "X");
+  if (xLine) return { winner: "X", line: xLine };
+
+  if (state.every(value => value !== "")) {
+    return { winner: "draw", line: null };
+  }
+
+  return null;
+}
+
+// ======================================
 // 開始 OOXX
-// ================================
+// ======================================
 
-function startOoxx() {
-
-  if (!rpsWinner) return;
-
-  gameState = STATES.PLAYING;
-  currentPlayer = rpsWinner;
+function startGame() {
+  clearAITimer();
 
   board = Array(9).fill("");
+  currentPlayer = rpsWinner;
+  phase = "playing";
 
-  rpsScreen.classList.add("hidden");
-  gameScreen.classList.remove("hidden");
+  showScreen(gameScreen);
+  renderScores();
+  renderBoard();
 
-  statusText.textContent =
-    `猜拳贏家 ${currentPlayer} 先下棋！`;
+  if (currentPlayer === "O") {
+    $("game-status").textContent = "輪到你下棋囉！";
+  } else {
+    $("game-status").textContent = "電腦先下棋 🤖";
+    scheduleAIMove();
+  }
+}
+
+// ======================================
+// 棋盤顯示
+// ======================================
+
+function renderBoard() {
+  const result = getResult(board);
 
   cells.forEach((cell, index) => {
-    cell.textContent = "";
-    cell.disabled = false;
+    const value = board[index];
+
+    cell.textContent = value;
     cell.className = "cell";
+
+    if (value) {
+      cell.classList.add(value.toLowerCase());
+    }
+
+    if (result?.line?.includes(index)) {
+      cell.classList.add("win");
+    }
+
+    cell.disabled =
+      phase !== "playing" ||
+      currentPlayer !== "O" ||
+      value !== "";
+
     cell.setAttribute(
       "aria-label",
-      `第${index + 1}格，空白`
+      `第${index + 1}格，${value || "空白"}`
     );
   });
 }
 
-// ================================
-// OOXX 下棋
-// ================================
+// ======================================
+// 玩家下棋
+// ======================================
 
-function playOoxx(event) {
+cells.forEach(cell => {
+  cell.addEventListener("click", () => {
+    const index = Number(cell.dataset.index);
 
-  if (gameState !== STATES.PLAYING) return;
+    if (phase !== "playing") return;
+    if (currentPlayer !== "O") return;
+    if (board[index] !== "") return;
 
-  const cell = event.currentTarget;
-  const index = Number(cell.dataset.index);
+    makeMove(index, "O");
+  });
+});
 
+function makeMove(index, player) {
+  if (phase !== "playing") return;
+  if (currentPlayer !== player) return;
   if (board[index] !== "") return;
 
-  board[index] = currentPlayer;
+  board[index] = player;
 
-  cell.textContent = currentPlayer;
-  cell.classList.add(currentPlayer.toLowerCase());
-  cell.disabled = true;
-  cell.setAttribute(
-    "aria-label",
-    `第${index + 1}格，${currentPlayer}`
-  );
+  const result = getResult(board);
 
-  const winningLine = findWinningLine(currentPlayer);
-
-  // 有人獲勝
-  if (winningLine) {
-
-    gameState = STATES.GAME_OVER;
-
-    scores[currentPlayer]++;
-    saveScores();
-    renderScores();
-
-    winningLine.forEach(i => {
-      cells[i].classList.add("win");
-    });
-
-    statusText.textContent =
-      `玩家 ${currentPlayer} 贏啦！🎉`;
-
-    disableBoard();
+  if (result) {
+    finishGame(result);
     return;
   }
 
-  // 平手
-  if (board.every(value => value !== "")) {
+  currentPlayer = player === "O" ? "X" : "O";
+  renderBoard();
 
-    gameState = STATES.GAME_OVER;
+  if (currentPlayer === "X") {
+    $("game-status").textContent = "電腦思考中... 🤖";
+    scheduleAIMove();
+  } else {
+    $("game-status").textContent = "輪到你下棋囉！";
+  }
+}
 
-    statusText.textContent =
-      "平手！下局再加油 ♡";
+// ======================================
+// AI 自動下棋
+// ======================================
 
-    disableBoard();
-    return;
+function scheduleAIMove() {
+  clearAITimer();
+
+  aiTimer = setTimeout(() => {
+    aiTimer = null;
+
+    if (phase !== "playing" || currentPlayer !== "X") {
+      return;
+    }
+
+    const move = getAIMove(board, difficulty);
+
+    if (move !== null) {
+      makeMove(move, "X");
+    }
+  }, 500);
+}
+
+function getEmptyCells(state) {
+  return state
+    .map((value, index) => value === "" ? index : null)
+    .filter(index => index !== null);
+}
+
+function randomMove(state) {
+  const options = getEmptyCells(state);
+
+  if (!options.length) return null;
+
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+// ======================================
+// 普通 AI：進攻與防守
+// ======================================
+
+function findImmediateWin(state, player) {
+  for (const index of getEmptyCells(state)) {
+    const copy = [...state];
+    copy[index] = player;
+
+    if (getWinningLine(copy, player)) {
+      return index;
+    }
   }
 
-  // 換人
-  currentPlayer =
-    currentPlayer === "O" ? "X" : "O";
-
-  statusText.textContent =
-    `輪到玩家 ${currentPlayer} 囉！`;
+  return null;
 }
 
-function disableBoard() {
-  cells.forEach(cell => {
-    cell.disabled = true;
-  });
+function normalMove(state) {
+  const win = findImmediateWin(state, "X");
+  if (win !== null) return win;
+
+  const block = findImmediateWin(state, "O");
+  if (block !== null) return block;
+
+  return randomMove(state);
 }
 
-// 綁定棋盤
-cells.forEach(cell => {
-  cell.addEventListener("click", playOoxx);
+// ======================================
+// 困難 AI：Minimax 演算法
+// ======================================
+
+function minimax(state, player, depth) {
+  const result = getResult(state);
+
+  if (result) {
+    if (result.winner === "X") return 10 - depth;
+    if (result.winner === "O") return depth - 10;
+    return 0;
+  }
+
+  const options = getEmptyCells(state);
+
+  if (player === "X") {
+    let bestScore = -Infinity;
+
+    for (const index of options) {
+      state[index] = "X";
+
+      const score = minimax(state, "O", depth + 1);
+
+      state[index] = "";
+      bestScore = Math.max(bestScore, score);
+    }
+
+    return bestScore;
+  }
+
+  let bestScore = Infinity;
+
+  for (const index of options) {
+    state[index] = "O";
+
+    const score = minimax(state, "X", depth + 1);
+
+    state[index] = "";
+    bestScore = Math.min(bestScore, score);
+  }
+
+  return bestScore;
+}
+
+function hardMove(state) {
+  const options = getEmptyCells(state);
+
+  if (!options.length) return null;
+
+  let bestScore = -Infinity;
+  let bestMove = options[0];
+
+  for (const index of options) {
+    const copy = [...state];
+    copy[index] = "X";
+
+    const score = minimax(copy, "O", 1);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = index;
+    }
+  }
+
+  return bestMove;
+}
+
+function getAIMove(state, level) {
+  if (level === "easy") return randomMove(state);
+  if (level === "normal") return normalMove(state);
+  return hardMove(state);
+}
+
+// ======================================
+// 遊戲結束
+// ======================================
+
+function finishGame(result) {
+  clearAITimer();
+  phase = "finished";
+
+  if (result.winner === "O") {
+    scores.O++;
+    $("game-status").textContent = "你贏啦！太棒了 🎉";
+  } else if (result.winner === "X") {
+    scores.X++;
+    $("game-status").textContent = "電腦贏了！再挑戰一次 🤖";
+  } else {
+    $("game-status").textContent = "平手！勢均力敵 ♡";
+  }
+
+  saveScores();
+  renderScores();
+  renderBoard();
+}
+
+// ======================================
+// 再玩一局
+// ======================================
+
+$("restart-btn").addEventListener("click", () => {
+  startRps();
 });
 
-// ================================
-// 重新開始
-// ================================
-
-function startNewRound() {
-
-  choiceO = null;
-  choiceX = null;
-  rpsWinner = null;
-
-  board = Array(9).fill("");
-  currentPlayer = null;
-
-  gameState = STATES.RPS_O;
-
-  showRpsScreen();
-}
-
-// 再玩一局：保留比分
-restartBtn.addEventListener("click", () => {
-  startNewRound();
-});
-
+// ======================================
 // 重置比分
-resetBtn.addEventListener("click", () => {
+// ======================================
 
-  const confirmed = confirm(
-    "確定要清除所有比分嗎？"
-  );
+$("reset-btn").addEventListener("click", () => {
+  const confirmed = confirm("確定要清除所有比分嗎？");
 
   if (!confirmed) return;
 
   scores = { O: 0, X: 0 };
-
   saveScores();
   renderScores();
-  startNewRound();
+  startRps();
 });
 
-// ================================
+// ======================================
 // 初始化
-// ================================
+// ======================================
 
 renderScores();
-startNewRound();
+showScreen(homeScreen);
