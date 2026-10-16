@@ -1,0 +1,296 @@
+
+:root {
+  --background: #FFF9F3;
+  --pink: #F2A7A0;
+  --blue: #83BFC3;
+  --dark: #34343B;
+  --gray: #777078;
+  --border: #EAE3DF;
+  --white: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--background);
+  color: var(--dark);
+  font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--dark);
+  outline-offset: 3px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.game {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 22px 32px;
+  text-align: center;
+}
+
+/* 標題 */
+.header h1 {
+  margin: 0;
+  font-size: 42px;
+  letter-spacing: 1px;
+}
+
+.header h1 span {
+  color: var(--pink);
+}
+
+.header p {
+  color: var(--gray);
+  font-size: 14px;
+  margin: 5px 0 25px;
+}
+
+/* 比分 */
+.scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.score {
+  border-radius: 18px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.score span {
+  font-size: 14px;
+}
+
+.score strong {
+  font-size: 30px;
+}
+
+.score-o {
+  background: #FCE7E3;
+  color: #9A5C56;
+}
+
+.score-x {
+  background: #E0F1F0;
+  color: #527F82;
+}
+
+/* 共用訊息卡片 */
+.message-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 18px 14px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.message-card h2 {
+  margin: 0 0 10px;
+  font-size: 21px;
+}
+
+.message-card p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: var(--gray);
+  font-weight: 400;
+}
+
+/* 猜拳按鈕 */
+.rps-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.gesture {
+  min-height: 112px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--dark);
+  transition: transform .15s, border-color .15s;
+}
+
+.gesture .emoji {
+  font-size: 38px;
+}
+
+.gesture span:last-child {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gesture:active {
+  transform: scale(.95);
+  border-color: var(--pink);
+}
+
+/* 猜拳結果 */
+.result-hands {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.result-player {
+  border-radius: 18px;
+  padding: 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-player span {
+  font-size: 14px;
+}
+
+.result-player strong {
+  font-size: 48px;
+}
+
+.result-o {
+  background: #FCE7E3;
+}
+
+.result-x {
+  background: #E0F1F0;
+}
+
+#rps-outcome {
+  font-size: 21px;
+  margin: 22px 0;
+}
+
+/* OOXX 棋盤 */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  font-size: clamp(42px, 14vw, 64px);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--dark);
+  transition: transform .15s, background .15s;
+}
+
+.cell:not(:disabled):active {
+  transform: scale(.95);
+}
+
+.cell.o {
+  color: var(--pink);
+}
+
+.cell.x {
+  color: var(--blue);
+}
+
+.cell.win {
+  background: #FFF0C9;
+  border-color: #F1D68C;
+}
+
+.cell:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+/* 主要按鈕 */
+.primary-btn {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 22px;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  background: var(--pink);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.primary-btn:active {
+  transform: scale(.99);
+}
+
+/* 重置比分 */
+.reset-btn {
+  background: transparent;
+  border: none;
+  padding: 12px;
+  margin-top: 16px;
+  color: var(--gray);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 頁尾 */
+footer {
+  margin-top: 18px;
+}
+
+footer p {
+  color: var(--gray);
+  font-size: 12px;
+}
+
+/* 小螢幕 */
+@media (max-width: 360px) {
+  .game {
+    padding: 20px 15px;
+  }
+
+  .gesture {
+    min-height: 95px;
+  }
+
+  .gesture .emoji {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
